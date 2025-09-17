@@ -341,7 +341,7 @@ export default function App() {
                 <p className="text-white/60">Hyderabad | June 2025 - Present</p>
               </div>
               <div className="mt-3 sm:mt-0">
-                <a className="text-sky-400 hover:underline" href="#">Company Site</a>
+                <a className="text-sky-400 hover:underline" href="https://it4yourbusiness.in">Company Site</a>
               </div>
             </div>
             <ul className="list-disc pl-6 mt-3 space-y-2 text-white/80">
