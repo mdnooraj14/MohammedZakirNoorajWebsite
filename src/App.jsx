@@ -401,15 +401,15 @@ export default function App() {
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <h3 className="text-lg font-semibold">BTECH in Information Technology</h3>
-              <p className="text-white/70">2020-2024 • GMR Institute of Technology • CGPA 7.17</p>
+              <p className="text-white/70">2020-2024 • GMR Institute of Technology </p>
             </Card>
             <Card>
               <h3 className="text-lg font-semibold">Intermediate (M.P.C)</h3>
-              <p className="text-white/70">2018-2020 • Naryana Jr College • CGPA 7.54</p>
+              <p className="text-white/70">2018-2020 • Naryana Jr College </p>
             </Card>
             <Card>
               <h3 className="text-lg font-semibold">10th • Sri Chaitanya Techno School</h3>
-              <p className="text-white/70">2017-2018 • CGPA 9.7</p>
+              <p className="text-white/70">2017-2018 </p>
             </Card>
             <Card>
               <h3 className="text-lg font-semibold">Oracle Cloud Infrastructure 2023 - Foundations Associate</h3>
