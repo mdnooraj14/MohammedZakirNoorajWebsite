@@ -1,0 +1,493 @@
+import React, { useMemo, Suspense, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { OrbitControls, Float, Html } from "@react-three/drei";
+import { motion } from "framer-motion";
+import { Github, Linkedin, Mail, ExternalLink, Download } from "lucide-react";
+
+function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement("canvas");
+    return !!(canvas.getContext("webgl") || canvas.getContext("experimental-webgl"));
+  } catch {
+    return false;
+  }
+}
+
+function StaticHero() {
+  const tags = ["React", "Node.js", "MongoDB", "Express", "Swagger", "ServiceNow", "MachineLearning", "DSA", "GIT"];
+  return (
+    <div className="h-[70vh] w-full rounded-2xl overflow-hidden border border-slate-800/20 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 grid place-items-center">
+      <div className="text-center">
+        <div className="text-3xl font-bold text-sky-400">Tech Stack</div>
+        <div className="mt-3 text-white/60 max-w-md mx-auto">
+          Static preview (WebGL unavailable). Open in a modern browser/device to view the 3D ring animation.
+        </div>
+        <div className="mt-6 flex flex-wrap justify-center gap-2 max-w-md mx-auto">
+          {tags.map((t) => (
+            <span key={t} className="px-3 py-1 rounded-full bg-white/10 text-white/85 text-xs border border-white/10">
+              {t}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RingLabel({ text, angle = 0, radius = 3.1, y = 0.18 }) {
+  const x = Math.cos(angle) * radius;
+  const z = Math.sin(angle) * radius;
+  return (
+    <group position={[x, y, z]} rotation={[0, -angle, 0]}>
+      <Html distanceFactor={12} center>
+        <span className="px-2 py-1 rounded-md text-[10px] font-semibold bg-white/92 text-slate-900 border border-black/5 shadow">
+          {text}
+        </span>
+      </Html>
+    </group>
+  );
+}
+
+/** Small glowing sphere that runs along the ring to add life */
+function LightRunner({ radius = 3.1, speed = 1, size = 0.08, offset = 0, color = "#38bdf8" }) {
+  const ref = useRef();
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime() * speed + offset;
+    const x = Math.cos(t) * radius;
+    const z = Math.sin(t) * radius;
+    const y = Math.sin(t * 1.4) * 0.15; // gentle bob
+    if (ref.current) {
+      ref.current.position.set(x, y, z);
+      ref.current.rotation.y = -t;
+    }
+  });
+  return (
+    <mesh ref={ref} castShadow receiveShadow>
+      <sphereGeometry args={[size, 16, 16]} />
+      <meshStandardMaterial
+        color={color}
+        emissive={color}
+        emissiveIntensity={0.8}
+        roughness={0.25}
+        metalness={0.5}
+      />
+    </mesh>
+  );
+}
+
+function RotatingRings({ skills }) {
+  const groupOuter = useRef();
+  const groupInner = useRef();
+
+  // Elegant, slow counter-rotation
+  useFrame((_, delta) => {
+    if (groupOuter.current) groupOuter.current.rotation.y += delta * 0.22;
+    if (groupInner.current) groupInner.current.rotation.y -= delta * 0.16;
+  });
+
+  const outerRadius = 3.1;
+  const innerRadius = 2.2;
+
+  return (
+    <group>
+      {/* OUTER RING + labels */}
+      <group ref={groupOuter}>
+        <mesh rotation={[Math.PI / 2.2, 0, 0]} castShadow receiveShadow>
+          <torusGeometry args={[outerRadius, 0.05, 16, 256]} />
+          <meshStandardMaterial
+            color="#38bdf8"
+            metalness={0.6}
+            roughness={0.25}
+            emissive="#0ea5e9"
+            emissiveIntensity={0.28}
+          />
+        </mesh>
+
+        {/* Labels evenly spaced */}
+        {skills.map((s, i) => (
+          <RingLabel key={s} text={s} angle={(i / skills.length) * Math.PI * 2} radius={outerRadius} />
+        ))}
+
+        {/* Light runners for dynamism */}
+        {Array.from({ length: 6 }).map((_, i) => (
+          <LightRunner
+            key={i}
+            radius={outerRadius}
+            speed={0.9 + (i % 3) * 0.08}
+            size={0.09}
+            offset={(i / 6) * Math.PI * 2}
+            color={i % 2 ? "#38bdf8" : "#a78bfa"}
+          />
+        ))}
+      </group>
+
+      {/* INNER RING (no labels, counter-rotating) */}
+      <group ref={groupInner}>
+        <mesh rotation={[Math.PI / 2.2, 0, 0]} castShadow receiveShadow>
+          <torusGeometry args={[innerRadius, 0.04, 16, 192]} />
+          <meshStandardMaterial
+            color="#a78bfa"
+            metalness={0.6}
+            roughness={0.28}
+            emissive="#7c3aed"
+            emissiveIntensity={0.22}
+          />
+        </mesh>
+
+        {/* inner light runners */}
+        {Array.from({ length: 4 }).map((_, i) => (
+          <LightRunner
+            key={`inner-${i}`}
+            radius={innerRadius}
+            speed={1.05 + (i % 2) * 0.1}
+            size={0.07}
+            offset={(i / 4) * Math.PI * 2}
+            color={i % 2 ? "#22d3ee" : "#f472b6"}
+          />
+        ))}
+      </group>
+
+      {/* Minimal center disc for balance */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <circleGeometry args={[0.7, 64]} />
+        <meshStandardMaterial color="#0b1220" metalness={0.5} roughness={0.42} />
+      </mesh>
+    </group>
+  );
+}
+
+function Hero3D() {
+  const skills = useMemo(
+    () => ["React", "Node.js", "MongoDB", "Express", "Swagger", "ServiceNow", "MachineLearning", "DSA", "GIT"],
+    []
+  );
+
+  return (
+    <div className="h-[70vh] w-full rounded-2xl overflow-hidden border border-slate-800/20 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800">
+      <Canvas shadows camera={{ position: [3.8, 2.6, 5.2], fov: 55 }}>
+        {/* Professional lighting */}
+        <ambientLight intensity={0.62} />
+        <directionalLight position={[5, 7, 6]} intensity={1.08} castShadow />
+
+        {/* Subtle rim lights for depth */}
+        <pointLight position={[-6, 3, -4]} intensity={0.25} color={"#60a5fa"} />
+        <pointLight position={[6, -2, 4]} intensity={0.2} color={"#a78bfa"} />
+
+        <RotatingRings skills={skills} />
+
+        <OrbitControls enablePan={false} maxDistance={10} minDistance={3.2} />
+      </Canvas>
+    </div>
+  );
+}
+
+// --- UI primitives ---
+const Section = ({ id, title, children }) => (
+  <section id={id} className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-6">{title}</h2>
+    <div className="grid gap-6">{children}</div>
+  </section>
+);
+
+const Card = ({ children }) => (
+  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-6 shadow-xl shadow-black/20">
+    {children}
+  </div>
+);
+
+const Badge = ({ children }) => (
+  <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white mr-2 mb-2">
+    {children}
+  </span>
+);
+
+// --- Error Boundary ---
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error("ErrorBoundary caught:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 rounded-2xl border border-red-500/30 bg-red-500/10 text-red-200">
+          <div className="font-semibold">3D preview failed to load.</div>
+          <div className="text-sm opacity-80">This environment may be missing WebGL or Three.js features. The rest of the site still works.</div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// --- App ---
+export default function App() {
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+      {/* NAV */}
+      <header className="sticky top-0 z-40 backdrop-blur-md border-b border-white/10 bg-gradient-to-r from-slate-950/80 via-indigo-950/70 to-slate-900/80 shadow-lg">
+  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+    
+    {/* Logo / Name */}
+    <a 
+      href="#top" 
+      className="relative font-extrabold text-2xl sm:text-3xl lg:text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 animate-text hover:scale-110 hover:drop-shadow-[0_0_18px_rgba(167,139,250,0.9)] transition-all duration-500"
+    >
+      Mohammed Zakir Nooraj
+    </a>
+          <nav className="hidden sm:flex gap-6 text-sm text-white/70">
+            <a href="#about" className="hover:text-white">About</a>
+            <a href="#skills" className="hover:text-white">Skills</a>
+            <a href="#experience" className="hover:text-white">Experience</a>
+            <a href="#projects" className="hover:text-white">Projects</a>
+            <a href="#education" className="hover:text-white">Education</a>
+            <a href="#contact" className="hover:text-white">Contact</a>
+          </nav>
+          <div className="flex items-center gap-3">
+            <a href="https://github.com/mdnooraj14" target="_blank" rel="noreferrer" className="p-2 rounded-xl hover:bg-white/10"><Github size={18} /></a>
+            <a href="https://www.linkedin.com/in/mohammed-zakir-nooraj" target="_blank" rel="noreferrer" className="p-2 rounded-xl hover:bg-white/10"><Linkedin size={18} /></a>
+            <a href="mailto:mdnooraj14@gmail.com" className="p-2 rounded-xl hover:bg-white/10"><Mail size={18} /></a>
+          </div>
+        </div>
+      </header>
+
+      {/* HERO */}
+      <main id="top" className="pt-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+              <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight">
+                Backend Developer <span className="text-sky-400">& MERN</span> Stack
+              </h1>
+              <p className="mt-4 text-white/70">
+                I build secure, scalable backends with Node.js, Express, MongoDB, and Redis. Passionate about AI agents and cloud-native architectures. Based in Hyderabad.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <a href="#contact" className="inline-flex items-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2 text-sm font-semibold text-white">
+                  Contact Me <ExternalLink size={16} />
+                </a>
+                <a href="https://drive.google.com/file/d/1ojjLB8AYB_dleglWGO8Crklb-pM4cg8h/view?usp=sharing" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
+                  <Download size={16} /> Download Resume
+                </a>
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <ErrorBoundary>
+                <Suspense
+                  fallback={
+                    <div className="h-[70vh] w-full rounded-2xl border border-white/10 grid place-items-center">
+                      <div className="text-white/70 text-sm">Loading 3D scene...</div>
+                    </div>
+                  }
+                >
+                  {isWebGLAvailable() ? <Hero3D /> : <StaticHero />}
+                </Suspense>
+              </ErrorBoundary>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ABOUT */}
+        <Section id="about" title="About Me">
+          <Card>
+            <p className="text-white/80">
+              MERN Stack Developer skilled in backend development with Node.js, Redis, and MongoDB. I focus on building secure, efficient systems and collaborating in Agile teams to ship production-ready software. I'm actively exploring AI/ML, LLMs, and agentic workflows to deliver real-world solutions.
+            </p>
+          </Card>
+        </Section>
+
+        {/* SKILLS */}
+        <Section id="skills" title="Skills">
+          <Card>
+            <div className="mb-3 text-white/70 text-sm">Core</div>
+            <div>
+              {[
+                "Node.js",
+                "Express.js",
+                "MongoDB",
+                "React.js",
+                "Redis",
+                "REST APIs",
+                "Swagger/OpenAPI",
+                "GitHub",
+                "Postman",
+                "C++",
+                "DSA",
+                "ServiceNow",
+                "LLMs",
+                "AI Agents",
+                "Agentic Workflows",
+                "MCP Server",
+                "AIML",
+              ].map((s) => (
+                <Badge key={s}>{s}</Badge>
+              ))}
+            </div>
+          </Card>
+        </Section>
+
+        {/* EXPERIENCE */}
+        <Section id="experience" title="Experience">
+          <Card>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-xl font-semibold">Backend Developer (MERN Stack) - IT4YOURBUSINESS</h3>
+                <p className="text-white/60">Hyderabad | June 2025 - Present</p>
+              </div>
+              <div className="mt-3 sm:mt-0">
+                <a className="text-sky-400 hover:underline" href="#">Company Site</a>
+              </div>
+            </div>
+            <ul className="list-disc pl-6 mt-3 space-y-2 text-white/80">
+              <li>Built secure, scalable backend services with Node.js &amp; Express.</li>
+              <li>Implemented Redis caching &amp; session handling for faster apps.</li>
+              <li>Applied horizontal scaling to support growing user load.</li>
+              <li>Collaborated across frontend, DevOps, and QA in Agile sprints.</li>
+              <li>Integrated backend APIs with real-time business requirements.</li>
+            </ul>
+          </Card>
+        </Section>
+
+        {/* PROJECTS */}
+        <Section id="projects" title="Projects">
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                name: "TechMantra",
+                desc: "Full-stack project",
+                link: "https://github.com/mdnooraj14/TechMantra.co_FullStack",
+              },
+              {
+                name: "Hybrid_RAG_LangChain_-_Gemini_-_HuggingFace_for_Resilient_PDF_Q-A",
+                desc: "RAG pipeline combining Gemini and HuggingFace for robust PDF Q&A.",
+                link: "https://github.com/mdnooraj14/Hybrid_RAG_LangChain_-_Gemini_-_HuggingFace_for_Resilient_PDF_Q-A",
+              },
+              {
+                name: "Chat_to_Action_Gemini_LLM_with_MCP_for_Real_World_Weather_Data.ipynb",
+                desc: "Chat-to-action agent using Gemini + MCP over live weather data.",
+                link: "https://github.com/mdnooraj14/Chat_to_Action_Gemini_LLM_with_MCP_for_Real_World_Weather_Data.ipynb",
+              },
+            ].map((p) => (
+              <Card key={p.name}>
+                <div className="min-h-[180px] flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold break-words">{p.name}</h3>
+                    <p className="text-white/70 mt-1">{p.desc}</p>
+                  </div>
+                  <div className="mt-3">
+                    <a
+                      href={p.link}
+                      className="inline-flex items-center gap-2 text-sky-400 hover:underline"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View <ExternalLink size={16} />
+                    </a>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </Section>
+
+        {/* EDUCATION & CERTS */}
+        <Section id="education" title="Education & Certifications">
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card>
+              <h3 className="text-lg font-semibold">BTECH in Information Technology</h3>
+              <p className="text-white/70">2020-2024 • GMR Institute of Technology • CGPA 7.17</p>
+            </Card>
+            <Card>
+              <h3 className="text-lg font-semibold">Intermediate (M.P.C)</h3>
+              <p className="text-white/70">2018-2020 • Naryana Jr College • CGPA 7.54</p>
+            </Card>
+            <Card>
+              <h3 className="text-lg font-semibold">10th • Sri Chaitanya Techno School</h3>
+              <p className="text-white/70">2017-2018 • CGPA 9.7</p>
+            </Card>
+            <Card>
+              <h3 className="text-lg font-semibold">Oracle Cloud Infrastructure 2023 - Foundations Associate</h3>
+              <p className="text-white/70">Certification</p>
+            </Card>
+            <Card>
+              <h3 className="text-lg font-semibold">Java Full-Stack (Tech Mahindra SMART Academy)</h3>
+              <p className="text-white/70">Training - Hyderabad</p>
+            </Card>
+          </div>
+        </Section>
+
+        {/* CONTACT */}
+        <Section id="contact" title="Contact">
+          <Card>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="font-semibold">Let's build something!</div>
+                <div className="text-white/70">Hyderabad | Open to roles and projects.</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <a
+                  href="mailto:mdnooraj14@gmail.com"
+                  className="inline-flex items-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  <Mail size={16} /> Email
+                </a>
+                <a
+                  href="https://github.com/mdnooraj14"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
+                >
+                  <Github size={16} /> GitHub
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/mohammed-zakir-nooraj"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
+                >
+                  <Linkedin size={16} /> LinkedIn
+                </a>
+              </div>
+            </div>
+          </Card>
+        </Section>
+      </main>
+
+      <footer className="py-8 text-center text-white/50 text-sm">
+        &copy; {new Date().getFullYear()} Mohammed Zakir Nooraj. Built with React • Three.js • Tailwind.
+      </footer>
+    </div>
+  );
+}
+
+/*
+  TESTS (suggested)
+  -----------------
+  1) Smoke test:
+  // App.test.jsx
+  import { render } from "@testing-library/react";
+  import App from "./App";
+  it("renders without crashing", () => { render(<App />); });
+
+  2) Navbar content test:
+  import { render, screen } from "@testing-library/react";
+  it("shows name in navbar", () => {
+    render(<App />);
+    expect(screen.getByText(/Mohammed Zakir Nooraj/i)).toBeInTheDocument();
+  });
+
+  3) ErrorBoundary fallback render:
+  import React from "react";
+  import { render, screen } from "@testing-library/react";
+  function Boom(){ throw new Error("boom"); }
+  it("shows fallback UI on error", () => {
+    render(<ErrorBoundary><Boom /></ErrorBoundary>);
+    expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
+  });
+*/
