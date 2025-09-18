@@ -1,8 +1,8 @@
-import React, { useMemo, Suspense, useRef } from "react";
+import React, { useMemo, Suspense, useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Float, Html } from "@react-three/drei";
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, ExternalLink, Download } from "lucide-react";
+import { Github, Linkedin, Mail, ExternalLink, Download, MessageCircle, Send, X } from "lucide-react";
 
 function isWebGLAvailable() {
   try {
@@ -226,6 +226,183 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+/**
+ * MZN Assistant — lightweight, privacy-friendly chatbot
+ * -----------------------------------------------------
+ * - Answers portfolio-related questions from a local knowledge base.
+ * - No backend needed. No tracking. Runs entirely in the browser.
+ * - Floating button toggles an animated chat panel.
+ */
+function MZNAssistant() {
+  const resumeUrl = "https://drive.google.com/file/d/1nBXouS_zcNa2kRHKVaCSbJuI3CZmWKQV/view?usp=sharing";
+  const kb = {
+    name: "Mohammed Zakir Nooraj",
+    role: "Backend Developer & MERN Stack",
+    location: "Hyderabad, India",
+    email: "mdnooraj14@gmail.com",
+    github: "https://github.com/mdnooraj14",
+    linkedin: "https://www.linkedin.com/in/mohammed-zakir-nooraj",
+    resume: resumeUrl,
+    skills: [
+      "Node.js","Express.js","MongoDB","React.js","Redis","REST APIs","Swagger/OpenAPI","GitHub","Postman","C++","DSA","ServiceNow","LLMs","AI Agents","Agentic Workflows","MCP Server","AIML"
+    ],
+    projects: [
+      { name: "TechMantra", link: "https://github.com/mdnooraj14/TechMantra.co_FullStack" },
+      { name: "Hybrid_RAG_LangChain_-_Gemini_-_HuggingFace_for_Resilient_PDF_Q-A", link: "https://github.com/mdnooraj14/Hybrid_RAG_LangChain_-_Gemini_-_HuggingFace_for_Resilient_PDF_Q-A" },
+      { name: "Chat_to_Action_Gemini_LLM_with_MCP_for_Real_World_Weather_Data.ipynb", link: "https://github.com/mdnooraj14/Chat_to_Action_Gemini_LLM_with_MCP_for_Real_World_Weather_Data.ipynb" },
+    ],
+    experience: "Backend Developer (MERN) at IT4YOURBUSINESS — June 2025 to Present",
+    education: [
+      "BTECH in Information Technology (GMR Institute of Technology, 2020-2024)",
+      "Intermediate (M.P.C) — Naryana Jr College (2018-2020)",
+      "10th — Sri Chaitanya Techno School (2017-2018)",
+      "Oracle Cloud Infrastructure 2023 Foundations Associate",
+      "Java Full-Stack — Tech Mahindra SMART Academy"
+    ]
+  };
+
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([
+    { role: "bot", text: `Hi! I\'m MZN Assistant. Ask me about ${kb.name}\'s skills, projects, experience, or how to contact him.` },
+  ]);
+
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") setOpen(false); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  function formatProjects() {
+    return kb.projects.map(p => `• ${p.name} — ${p.link}`).join("\n");
+  }
+
+  function answer(questionRaw) {
+    const q = questionRaw.toLowerCase();
+
+    // Simple intent routing
+    if (/(name|who (are|is) you|owner)/.test(q)) {
+      return `I represent ${kb.name}, ${kb.role}, based in ${kb.location}.`;
+    }
+    if (/(location|based|where)/.test(q)) {
+      return `${kb.name} is based in ${kb.location}.`;
+    }
+    if (/(email|contact|reach|mail)/.test(q)) {
+      return `You can contact ${kb.name} at ${kb.email} or on LinkedIn (${kb.linkedin}).`;
+    }
+    if (/(github|code|repos)/.test(q)) {
+      return `GitHub profile: ${kb.github}`;
+    }
+    if (/(linkedin)/.test(q)) {
+      return `LinkedIn: ${kb.linkedin}`;
+    }
+    if (/(resume|cv|download)/.test(q)) {
+      return `Here is the resume: ${kb.resume}`;
+    }
+    if (/(skill|stack|tech|technolog)/.test(q)) {
+      return `Key skills: ${kb.skills.join(", ")}.`;
+    }
+    if (/(project|portfolio|work)/.test(q)) {
+      return `Recent projects:\n${formatProjects()}`;
+    }
+    if (/(experience|job|work history)/.test(q)) {
+      return `${kb.experience}. Core responsibilities: Node.js/Express services, Redis caching/sessions, horizontal scaling, and API integration in Agile squads.`;
+    }
+    if (/(education|cert|degree|college|school)/.test(q)) {
+      return `Education & Certifications:\n• ${kb.education.join("\n• ")}`;
+    }
+    if (/help|what can you do|commands?/.test(q)) {
+      return `Try asking: \n• "What are your skills?"\n• "Show projects"\n• "How can I contact you?"\n• "Download resume"\n• "Where are you based?"`;
+    }
+
+    // fallback: lightly fuzzy match keywords present in kb
+    const maybeSkill = kb.skills.find(s => q.includes(s.toLowerCase().replace(/\W+/g, "")));
+    if (maybeSkill) {
+      return `Yes, ${kb.name} works with ${maybeSkill}. Full stack: ${kb.skills.join(", ")}.`;
+    }
+
+    return "I couldn't find that in the portfolio. Try asking about skills, projects, experience, education, GitHub, LinkedIn, or resume.";
+  }
+
+  function send() {
+    const text = input.trim();
+    if (!text) return;
+    const userMsg = { role: "user", text };
+    setMessages((m) => [...m, userMsg]);
+    setInput("");
+    // "Think" briefly (simulated)
+    const reply = answer(text);
+    setTimeout(() => setMessages((m) => [...m, { role: "bot", text: reply }]), 150);
+  }
+
+  return (
+    <>
+      {/* Floating toggle button */}
+      <button
+        aria-label="Open MZN Assistant"
+        onClick={() => setOpen(true)}
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-cyan-500/20 hover:scale-105 active:scale-95 transition"
+      >
+        <MessageCircle size={18} /> MZN Assistant
+      </button>
+
+      {/* Backdrop */}
+      {open && (
+        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+
+          {/* Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-6 right-6 w-[min(92vw,380px)] h-[520px] rounded-2xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
+              <div className="font-semibold">MZN Assistant</div>
+              <button aria-label="Close" onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-white/10">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {messages.map((m, i) => (
+                <div key={i} className={`max-w-[85%] ${m.role === "bot" ? "mr-auto" : "ml-auto"}`}>
+                  <div className={`${m.role === "bot" ? "bg-white/10" : "bg-sky-500"} text-white px-3 py-2 rounded-xl whitespace-pre-wrap text-sm border border-white/10`}>{m.text}</div>
+                </div>
+              ))}
+              {/* Quick chips */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {["Show projects","Download resume","Contact info","What are your skills?","Where are you based?"].map(q => (
+                  <button key={q} onClick={() => { setInput(q); setTimeout(send, 0); }} className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/80 hover:bg-white/10">{q}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Input */}
+            <div className="p-3 border-t border-white/10 bg-white/5">
+              <div className="flex items-center gap-2">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+                  placeholder="Ask about skills, projects, resume..."
+                  className="flex-1 bg-transparent outline-none rounded-xl border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/50"
+                />
+                <button onClick={send} className="inline-flex items-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 px-3 py-2 text-sm font-semibold text-white">
+                  <Send size={16} />
+                </button>
+              </div>
+              <div className="text-[10px] text-white/50 mt-2">Local Q&A — no data leaves your browser.</div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // --- App ---
 export default function App() {
   return (
@@ -272,7 +449,7 @@ export default function App() {
                 <a href="#contact" className="inline-flex items-center gap-2 rounded-xl bg-sky-500 hover:bg-sky-400 px-4 py-2 text-sm font-semibold text-white">
                   Contact Me <ExternalLink size={16} />
                 </a>
-                <a href="https://drive.google.com/file/d/1ojjLB8AYB_dleglWGO8Crklb-pM4cg8h/view?usp=sharing" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
+                <a href="https://drive.google.com/file/d/1nBXouS_zcNa2kRHKVaCSbJuI3CZmWKQV/view?usp=sharing" className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10">
                   <Download size={16} /> Download Resume
                 </a>
               </div>
@@ -405,7 +582,7 @@ export default function App() {
             </Card>
             <Card>
               <h3 className="text-lg font-semibold">Intermediate (M.P.C)</h3>
-              <p className="text-white/70">2018-2020 • Naryana Jr College </p>
+              <p className="text-white/70">2018-2020 • Naryana Jr College</p>
             </Card>
             <Card>
               <h3 className="text-lg font-semibold">10th • Sri Chaitanya Techno School</h3>
@@ -462,6 +639,9 @@ export default function App() {
       <footer className="py-8 text-center text-white/50 text-sm">
         &copy; {new Date().getFullYear()} Mohammed Zakir Nooraj. Built with React • Three.js • Tailwind.
       </footer>
+
+      {/* Floating Chatbot */}
+      <MZNAssistant />
     </div>
   );
 }
