@@ -366,19 +366,36 @@ function MZNAssistant() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
-              {messages.map((m, i) => (
-                <div key={i} className={`max-w-[85%] ${m.role === "bot" ? "mr-auto" : "ml-auto"}`}>
-                  <div className={`${m.role === "bot" ? "bg-white/10" : "bg-sky-500"} text-white px-3 py-2 rounded-xl whitespace-pre-wrap text-sm border border-white/10`}>{m.text}</div>
-                </div>
-              ))}
-              {/* Quick chips */}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {["Show projects","Download resume","Contact info","What are your skills?","Where are you based?"].map(q => (
-                  <button key={q} onClick={() => { setInput(q); setTimeout(send, 0); }} className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/80 hover:bg-white/10">{q}</button>
-                ))}
-              </div>
-            </div>
+<div className="flex-1 overflow-y-auto p-3 space-y-3">
+  {messages.map((m, i) => (
+    <div
+      key={i}
+      className={`min-w-0 max-w-[85%] ${m.role === "bot" ? "mr-auto" : "ml-auto"}`}
+    >
+      <div
+        className={`${
+          m.role === "bot" ? "bg-white/10" : "bg-sky-500"
+        } text-white px-3 py-2 rounded-xl whitespace-pre-wrap break-words text-sm border border-white/10`}
+      >
+        {m.text}
+      </div>
+    </div>
+  ))}
+
+  {/* Quick chips */}
+  <div className="flex flex-wrap gap-2 mt-2">
+    {["Show projects","Download resume","Contact info","What are your skills?","Where are you based?"].map(q => (
+      <button
+        key={q}
+        onClick={() => { setInput(q); setTimeout(send, 0); }}
+        className="text-xs px-3 py-1 rounded-full border border-white/10 text-white/80 hover:bg-white/10"
+      >
+        {q}
+      </button>
+    ))}
+  </div>
+</div>
+
 
             {/* Input */}
             <div className="p-3 border-t border-white/10 bg-white/5">
